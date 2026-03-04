@@ -1,0 +1,14 @@
+load("@rules_rust//rust:defs.bzl", "rust_binary")
+
+rust_binary(
+    name = "bindgen",
+    srcs = ["main.rs"],
+    crate_features = ["logging"],
+    edition = "2021",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@crates//:bindgen",
+        "@crates//:env_logger",
+        "@crates//:log",
+    ],
+)

@@ -1,0 +1,13 @@
+# so that clang-sys can depend on it
+alias(
+    name = "libclang_static",
+    actual = "@llvm-project//clang:libclang_static",
+    visibility = ["//visibility:public"],
+)
+
+# to check that it's statically linked, e.g.:
+# bazel build :bindgen_cli && nm  bazel-bin/third_party/bindgen-cli/bindgen | grep "T clang_" | head -n 20
+alias(
+    name = "bindgen_cli",
+    actual = "//third_party/bindgen-cli:bindgen",
+)

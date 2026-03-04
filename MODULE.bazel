@@ -1,0 +1,87 @@
+module(
+    name = "bindgen_project",
+    version = "0.1",
+)
+
+bazel_dep(name = "bazel_skylib", version = "1.8.2")
+bazel_dep(name = "rules_cc", version = "0.2.14")
+bazel_dep(name = "rules_python", version = "1.7.0")
+bazel_dep(name = "rules_shell", version = "0.6.1")
+bazel_dep(name = "platforms", version = "1.0.0")
+bazel_dep(name = "rules_java", version = "9.0.3")
+bazel_dep(name = "zlib", version = "1.3.1.bcr.5")
+bazel_dep(name = "zstd", version = "1.5.6")
+bazel_dep(name = "rules_rust", version = "0.69.0")
+
+rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
+rust.toolchain(
+    edition = "2021",
+    versions = ["1.81.0"],
+)
+use_repo(rust, "rust_toolchains")
+
+register_toolchains("@rust_toolchains//:all")
+
+crate = use_extension("@rules_rust//crate_universe:extension.bzl", "crate")
+crate.spec(
+    default_features = False,
+    features = ["__cli"],
+    package = "bindgen",
+    version = "0.71.1",
+)
+crate.spec(
+    package = "log",
+    version = "0.4",
+)
+crate.spec(
+    package = "env_logger",
+    version = "0.11",
+)
+
+# One way to set up clang-sys is via the static crate,
+# an explicit dependency on the llvm libclang-static target
+# and disabling its build script.
+crate.spec(
+    default_features = False,
+    features = ["static"],
+    package = "clang-sys",
+    version = "1.8.1",
+)
+crate.annotation(
+    crate = "clang-sys",
+    gen_build_script = "off",
+    deps = ["@@//:libclang_static"],
+)
+crate.from_specs()
+use_repo(crate, "crates")
+
+bazel_dep(name = "llvm-project")
+archive_override(
+    module_name = "llvm-project",
+    patch_cmds = [
+        "cp -r utils/bazel/llvm-project-overlay/* .",
+        "echo \"LLVM_VERSION_MAJOR = '23'\" > vars.bzl",
+        "echo \"LLVM_VERSION_MINOR = '0'\" >> vars.bzl",
+        "echo \"LLVM_VERSION_PATCH = '0'\" >> vars.bzl",
+        "echo \"PACKAGE_VERSION = '23.0.0'\" >> vars.bzl",
+        "echo \"LLVM_VERSION_SUFFIX = 'git'\" >> vars.bzl",
+        "echo \"llvm_targets = ['X86']\" > llvm/targets.bzl",
+        "touch BUILD.bazel",
+        """
+echo 'module(name = "llvm-project")
+bazel_dep(name = "bazel_skylib", version = "1.8.2")
+bazel_dep(name = "rules_cc", version = "0.2.14")
+bazel_dep(name = "rules_python", version = "1.7.0")
+bazel_dep(name = "rules_shell", version = "0.6.1")
+bazel_dep(name = "platforms", version = "1.0.0")
+bazel_dep(name = "rules_java", version = "9.0.3")
+bazel_dep(name = "zlib", version = "1.3.1.bcr.5")
+bazel_dep(name = "zstd", version = "1.5.6")' > MODULE.bazel
+        """,
+        # Map expected repo names and targets to actual ones
+        "sed -i 's/@llvm_zlib\\/\\/:zlib-ng/@zlib\\/\\/:zlib/g' third-party/BUILD.bazel",
+        "sed -i 's/@llvm_zstd\\/\\/:zstd/@zstd\\/\\/:zstd/g' third-party/BUILD.bazel",
+    ],
+    strip_prefix = "llvm-project-943eb6fd958e8b130ee94f5c65b7d53ec3419acc",
+    urls = ["https://github.com/llvm/llvm-project/archive/943eb6fd958e8b130ee94f5c65b7d53ec3419acc.zip"],
+)

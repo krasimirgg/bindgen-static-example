@@ -1,0 +1,6 @@
+build --linkopt=-fuse-ld=lld
+build --copt=-fno-stack-protector
+build --copt=-fno-asynchronous-unwind-tables
+build --copt=-fno-unwind-tables
+build --copt=-fno-keep-inline-functions
+build --copt=-fno-exceptions

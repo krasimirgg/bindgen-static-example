@@ -1,0 +1,6 @@
+# Bazel directories
+/bazel-*
+
+# Other Bazel temp files
+.bazelrc.user
+MODULE.bazel.lock
